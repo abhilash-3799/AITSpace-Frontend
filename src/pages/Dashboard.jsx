@@ -6,13 +6,8 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
-
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  const userData = user || JSON.parse(sessionStorage.getItem("userData")) || {};
-  const name = userData.employeeName || userData.username || userData.email?.split('@')[0] || "User";
-  const initial = name.charAt(0).toUpperCase();
 
   const today = new Date();
   const dayName = today.toLocaleDateString("en-US", { weekday: "long" });
@@ -22,7 +17,7 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="text-2xl font-semibold">Welcome back, {name}</div>
+      <div className="text-2xl font-semibold">Welcome back, {user?.name}!</div>
       <div className="text-gray-500">{formattedDate}</div>
 
       {/* Top Actions */}
@@ -36,7 +31,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="cursor-pointer hover:shadow-lg transition-all"
-          onClick={() => navigate("/meeting-rooms")}>
+        onClick={()=> navigate("/meeting-rooms")}>
           <CardContent className="p-6 space-y-2">
             <div className="font-medium text-lg flex items-center gap-2"><Users size={18} /> Book Meeting Room</div>
             <div className="text-gray-500 text-sm">Reserve a meeting room with required capacity</div>
