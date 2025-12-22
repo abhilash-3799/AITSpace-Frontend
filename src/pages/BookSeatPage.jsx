@@ -20,17 +20,17 @@ function mapBackendSeatToFrontend(backendSeat) {
       numericId = parseInt(match[1], 10);
     }
   }
-  
+
   // SIMPLE AND CORRECT STATUS LOGIC
   let status = "available";
-  
+
   // Debug log
   console.log(`Mapping seat ${backendSeat.seatNumber}:`, {
     active: backendSeat.isActive,
     available: backendSeat.isAvailable,
     seatStatus: backendSeat.seatStatus
   });
-  
+
   if (backendSeat.isActive === false) {
     status = "unavailable";
   } else if (backendSeat.seatStatus === "ALLOCATED") {
@@ -77,51 +77,51 @@ export default function BookSeatPage() {
       setIsLoading(true);
       setError(null);
       setDebugInfo("");
-      
+
       try {
         console.log('Fetching seats from backend...');
         const allSeats = await seatBookingApi.getAllSeats();
         console.log('Backend seats received:', allSeats.length, 'seats');
-        
+
         if (allSeats.length === 0) {
           throw new Error('No seats available in database');
         }
-        
+
         // Debug: Show sample seat data
         if (allSeats.length > 0) {
           console.log('Sample seat data (first 3):', allSeats.slice(0, 3));
         }
-        
+
         const groupedSeats = {};
         let availableCount = 0;
         let bookedCount = 0;
         let unavailableCount = 0;
-        
+
         allSeats.forEach((backendSeat) => {
           const officeName = backendSeat.officeName || "Unknown";
-          
+
           if (!groupedSeats[officeName]) {
             groupedSeats[officeName] = [];
           }
-          
+
           const frontendSeat = mapBackendSeatToFrontend(backendSeat);
           groupedSeats[officeName].push(frontendSeat);
-          
+
           // Count statuses
           if (frontendSeat.status === "available") availableCount++;
           if (frontendSeat.status === "booked") bookedCount++;
           if (frontendSeat.status === "unavailable") unavailableCount++;
         });
-        
+
         console.log('Seat counts:', { availableCount, bookedCount, unavailableCount });
         setDebugInfo(`Total: ${allSeats.length} | Available: ${availableCount} | Booked: ${bookedCount} | Unavailable: ${unavailableCount}`);
-        
+
         setFloorSeats(groupedSeats);
-        
+
         if (!groupedSeats[currentFloor] && Object.keys(groupedSeats).length > 0) {
           setCurrentFloor(Object.keys(groupedSeats)[0]);
         }
-        
+
       } catch (error) {
         console.error('Error fetching seats:', error.message);
         setError('Failed to load seats: ' + error.message);
@@ -137,11 +137,11 @@ export default function BookSeatPage() {
     setIsLoading(true);
     try {
       const allSeats = await seatBookingApi.getAllSeats();
-      
+
       if (allSeats.length === 0) {
         throw new Error('No seats available');
       }
-      
+
       const groupedSeats = {};
       allSeats.forEach((backendSeat) => {
         const officeName = backendSeat.officeName || "Unknown";
@@ -150,7 +150,7 @@ export default function BookSeatPage() {
         }
         groupedSeats[officeName].push(mapBackendSeatToFrontend(backendSeat));
       });
-      
+
       setFloorSeats(groupedSeats);
       setError(null);
       console.log('Seats refreshed');
@@ -191,21 +191,22 @@ export default function BookSeatPage() {
         throw new Error('Seat not found');
       }
 
-      // Format date for backend
-      const bookingDateTime = new Date(bookingData.date);
-      const [hours, minutes] = bookingData.startTime.split(':').map(Number);
-      bookingDateTime.setHours(hours, minutes, 0, 0);
+      // Get user data from sessionStorage
+      const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
 
+      // Format data for backend according to SeatBookingRequestDTO
       const backendBookingData = {
-        seatId: seat.seatId, // e.g., "SEAT-001"
-        employeeId: "EMP-001",
-        seatBookingDate: bookingDateTime.toISOString().slice(0, 19), // "YYYY-MM-DDTHH:mm:ss"
-        status: "ALLOCATED"
+        seatNumber: seat.seatNumber, // e.g., "S-1" or "SEAT-001"
+        officeName: currentFloor,    // e.g., "Pune" or "Nagpur"
+        employeeId: userData.employeeId, // Temporary - remove later
+        bookingDate: bookingData.date, // "YYYY-MM-DD"
+        startTime: bookingData.startTime, // "HH:MM"
+        endTime: bookingData.endTime      // "HH:MM"
       };
 
       console.log('Sending booking data:', backendBookingData);
-      
-      // Call backend API
+
+      // Call backend API with correct endpoint
       const response = await seatBookingApi.createBooking(backendBookingData);
       console.log('Booking successful:', response);
 
@@ -217,14 +218,14 @@ export default function BookSeatPage() {
         const updated = { ...prev };
         if (updated[currentFloor]) {
           updated[currentFloor] = updated[currentFloor].map((s) =>
-            s.id === modalSeat 
-              ? { 
-                  ...s, 
-                  status: "booked", 
-                  bookedDate: bookingData.date,
-                  isAvailable: false,
-                  seatStatus: "ALLOCATED"
-                } 
+            s.id === modalSeat
+              ? {
+                ...s,
+                status: "booked",
+                bookedDate: bookingData.date,
+                isAvailable: false,
+                seatStatus: "ALLOCATED"
+              }
               : s
           );
         }
@@ -237,11 +238,11 @@ export default function BookSeatPage() {
       // Refresh after 1 second
       setTimeout(() => refreshSeats(), 1000);
 
-      alert(`✅ Booking successful! Seat ${seat.seatNumber} has been booked.`);
+      alert(`Booking successful! Seat ${seat.seatNumber} has been booked.`);
 
     } catch (error) {
       console.error('Booking error:', error);
-      alert(`❌ Booking failed: ${error.message}`);
+      alert(`Booking failed: ${error.message}`);
     }
   }
 
@@ -251,7 +252,7 @@ export default function BookSeatPage() {
   const occupied = booked;
   const occupancyPercent = total ? Math.round((occupied / total) * 100) : 0;
 
-  const availableFloors = Object.keys(floorSeats).filter(floor => 
+  const availableFloors = Object.keys(floorSeats).filter(floor =>
     floorSeats[floor] && floorSeats[floor].length > 0
   );
   const displayFloors = availableFloors.length > 0 ? availableFloors : FLOORS;

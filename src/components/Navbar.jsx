@@ -11,6 +11,7 @@ export default function Navbar() {
   const userData = user || JSON.parse(sessionStorage.getItem("userData")) || {};
   const name = userData.employeeName || userData.username || userData.email?.split('@')[0] || "User";
   const role = userData.role || "";
+  const empNumber = userData.employeeNumber || "";
   const initial = name.charAt(0).toUpperCase();
 
   const handleLogout = () => {
@@ -20,10 +21,9 @@ export default function Navbar() {
 
   // Reusable NavLink styling
   const navItemClass = ({ isActive }) =>
-    `px-3 py-2 rounded-lg transition-all ${
-      isActive
-        ? "bg-gray-200 text-black font-medium"
-        : "text-gray-700 hover:bg-gray-100"
+    `px-3 py-2 rounded-lg transition-all ${isActive
+      ? "bg-gray-200 text-black font-medium"
+      : "text-gray-700 hover:bg-gray-100"
     }`;
 
   return (
@@ -97,7 +97,8 @@ export default function Navbar() {
           </div>
           <div className="text-left">
             <span className="text-gray-700 font-medium block">{name}</span>
-            <span className="text-xs text-gray-500 capitalize">{role.toLowerCase()}</span>
+            {/* <span className="text-xs text-gray-500 capitalize">{role.toLowerCase()}</span> */}
+            <span className="text-xs text-gray-500 capitalize">{empNumber}</span>
           </div>
         </div>
 

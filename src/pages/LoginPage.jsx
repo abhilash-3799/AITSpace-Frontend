@@ -44,7 +44,7 @@ export default function LoginPage() {
       // Store user data in sessionStorage including employee ID
       const userSessionData = {
         ...userData,
-        employeeId: userData.loginId || userData.employeeId, // Adjust based on your backend
+        employeeId: userData.employeeId, 
         isAuthenticated: true
       };
       

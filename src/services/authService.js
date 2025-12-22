@@ -1,5 +1,5 @@
-const API_BASE_URL = "http://localhost:8080/api/auth";
-
+const API_BASE_URL = "process.env.REACT_APP_API_BASE_URL/api/auth";
+//const API_BASE_URL = "http://192.168.120.15:8080/api/auth";
 export const login = async (email, password) => {
     try {
         const response = await fetch(`${API_BASE_URL}/login`, {
