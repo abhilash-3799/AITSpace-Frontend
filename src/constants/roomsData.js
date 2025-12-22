@@ -1,0 +1,76 @@
+// constants/roomsData.js
+
+export const ROOMS_DATA = [
+  {
+    name: "Boardroom A",
+    floor: "3",
+    capacity: "Up to 12 people",
+    desc: "Large boardroom perfect for executive meetings and presentations",
+    tags: ["Video Conference", "Projector", "Whiteboard", "WiFi"],
+    availability: 90,
+  },
+  {
+    name: "Conference Room B",
+    floor: "3",
+    capacity: "Up to 8 people",
+    desc: "Medium-sized room ideal for team meetings",
+    tags: ["Video Conference", "TV Screen", "WiFi"],
+    availability: 100,
+  },
+  {
+    name: "Huddle Space 1",
+    floor: "2",
+    capacity: "Up to 4 people",
+    desc: "Cozy space for small team discussions",
+    tags: ["TV Screen", "WiFi"],
+    availability: 100,
+  },
+  {
+    name: "Huddle Space 2",
+    floor: "2",
+    capacity: "Up to 4 people",
+    desc: "Ideal for quick sync-ups and 1-on-1s",
+    tags: ["TV Screen", "WiFi"],
+    availability: 100,
+  },
+  {
+    name: "Training Room",
+    floor: "1",
+    capacity: "Up to 20 people",
+    desc: "Spacious room designed for workshops and training sessions",
+    tags: ["Projector", "WiFi"],
+    availability: 80,
+  },
+  {
+    name: "Creative Studio",
+    floor: "4",
+    capacity: "Up to 6 people",
+    desc: "Collaborative space for brainstorming and creative sessions",
+    tags: ["TV Screen", "WiFi"],
+    availability: 75,
+  },
+];
+
+export const SAMPLE_SCHEDULE = [
+  { time: "08:00", available: true },
+  { time: "08:30", available: true },
+  { time: "09:00", available: false },
+  { time: "09:30", available: true },
+  { time: "10:00", available: false },
+  { time: "10:30", available: true },
+  { time: "11:00", available: true },
+  { time: "11:30", available: false },
+  { time: "12:00", available: true },
+  { time: "12:30", available: true },
+  { time: "13:00", available: true },
+  { time: "13:30", available: true },
+  { time: "14:00", available: false },
+  { time: "14:30", available: true },
+  { time: "15:00", available: true },
+  { time: "15:30", available: true },
+  { time: "16:00", available: false },
+  { time: "16:30", available: true },
+  { time: "17:00", available: true },
+  { time: "17:30", available: true },
+  { time: "18:00", available: true }
+];
