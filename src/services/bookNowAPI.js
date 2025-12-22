@@ -1,4 +1,4 @@
-// bookNowAPI.js - Frontend API service
+// bookNowAPI.js - Updated error handling
 const API_BASE_URL = 'http://localhost:8080/api';
 
 export const bookNowAPI = {
@@ -14,12 +14,13 @@ export const bookNowAPI = {
 
             // Format data for backend
             const formattedData = {
+                employeeId: bookingData.employeeId,
                 roomName: bookingData.roomName,
                 floor: bookingData.floor,
                 capacity: extractCapacity(bookingData.capacity),
-                date: bookingData.date, // "2025-12-12" format is OK
-                startTime: bookingData.startTime, // "16:30" format
-                endTime: bookingData.endTime, // "18:00" format
+                date: bookingData.date,
+                startTime: bookingData.startTime,
+                endTime: bookingData.endTime,
                 amenities: bookingData.amenities || [],
                 officeName: bookingData.officeName,
                 attendees: bookingData.attendees || null,
@@ -39,11 +40,36 @@ export const bookNowAPI = {
             });
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Booking failed');
+                let errorMessage = 'Booking failed';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                    
+                    // Check for specific error messages
+                    if (response.status === 409) {
+                        errorMessage = errorData.message || "Room is already booked for the selected time slot";
+                    } else if (response.status === 400) {
+                        errorMessage = errorData.message || "Invalid booking request";
+                    } else if (response.status === 404) {
+                        errorMessage = errorData.message || "Employee not found";
+                    }
+                } catch (jsonError) {
+                    // If response is not JSON, try to get text
+                    const text = await response.text();
+                    if (text) {
+                        errorMessage = text;
+                    }
+                }
+                
+                // Create error object with status and message
+                const error = new Error(errorMessage);
+                error.status = response.status;
+                throw error;
             }
             
-            return await response.json();
+            const responseData = await response.json();
+            console.log("✅ Backend response:", responseData);
+            return responseData;
         } catch (error) {
             console.error('Booking API error:', error);
             throw error;
@@ -62,6 +88,7 @@ export const bookNowAPI = {
 
             // Format data for backend
             const formattedData = {
+                employeeId: bookingData.employeeId,
                 roomName: bookingData.roomName,
                 floor: bookingData.floor,
                 capacity: extractCapacity(bookingData.capacity),
@@ -131,9 +158,9 @@ export const bookNowAPI = {
     },
     
     // Cancel a booking
-    cancelBooking: async (bookingId) => {
+    cancelBooking: async (bookingIdString) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {
+            const response = await fetch(`${API_BASE_URL}/bookings/${bookingIdString}/cancel`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

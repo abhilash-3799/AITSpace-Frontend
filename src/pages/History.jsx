@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Filter, Calendar, Clock, Users, DoorOpen, MapPin } from "lucide-react";
+import { bookNowAPI } from "../services/bookNowAPI";
 
 export default function BookingHistory() {
   const [statusFilter, setStatusFilter] = useState("All");
@@ -8,7 +9,7 @@ export default function BookingHistory() {
   const [seatBookings, setSeatBookings] = useState([]);
   const [meetingBookings, setMeetingBookings] = useState([]);
 
-  // Load from localStorage
+  // Load from localStorage on mount
   useEffect(() => {
     const seats = JSON.parse(localStorage.getItem("seatBookings")) || [];
     const meetings = JSON.parse(localStorage.getItem("meetingBookings")) || [];
@@ -20,88 +21,99 @@ export default function BookingHistory() {
   // ⭐ Add Notification Helper
   const addNotification = (newNotification) => {
     const existing = JSON.parse(localStorage.getItem("notifications")) || [];
-
     existing.unshift(newNotification); // add at top
-
     localStorage.setItem("notifications", JSON.stringify(existing));
-
-    // notify Notifications.jsx
     window.dispatchEvent(new Event("notificationAdded"));
   };
 
   // Confirmation Popup
-  const confirmCancel = () => {
-    return window.confirm("Are you sure you want to cancel this booking?");
-  };
+  const confirmCancel = () => window.confirm("Are you sure you want to cancel this booking?");
 
   // Cancel Seat Booking
-  const cancelSeatBooking = (id) => {
+  const cancelSeatBooking = async (id) => {
     if (!confirmCancel()) return;
 
-    const updated = seatBookings.map((b) =>
-      b.id === id ? { ...b, status: "Cancelled" } : b
-    );
+    const booking = seatBookings.find((b) => b.id === id);
+    const bookingIdString = booking?.bookingIdString; // ✅ Use bookingIdString
 
-    setSeatBookings(updated);
-    localStorage.setItem("seatBookings", JSON.stringify(updated));
+    if (!bookingIdString) {
+      alert("Booking ID is missing! Cannot cancel this booking.");
+      return;
+    }
 
-    // ⭐ Add Notification for seat cancellation
-    const booking = seatBookings.find((s) => s.id === id);
+    try {
+      await bookNowAPI.cancelBooking(bookingIdString);
 
-    addNotification({
-      id: Date.now(),
-      title: "Seat Booking Cancelled",
-      message: `Your seat ${booking.seatId} in ${booking.office} has been cancelled.`,
-      time: "Just now",
-      unread: true,
-      iconType: "bell",
-      tag: "New",
-      bg: "bg-red-50",
-    });
+      const updated = seatBookings.map((b) =>
+        b.id === id ? { ...b, status: "Cancelled" } : b
+      );
+
+      setSeatBookings(updated);
+      localStorage.setItem("seatBookings", JSON.stringify(updated));
+
+      addNotification({
+        id: Date.now(),
+        title: "Seat Booking Cancelled",
+        message: `Your seat ${booking.seatId} in ${booking.office} has been cancelled.`,
+        time: "Just now",
+        unread: true,
+        iconType: "bell",
+        tag: "New",
+        bg: "bg-red-50",
+      });
+    } catch (error) {
+      console.error("Failed to cancel seat booking:", error);
+      alert("Failed to cancel booking. Check console for details.");
+    }
   };
 
   // Cancel Meeting Booking
-  const cancelMeetingBooking = (id) => {
+  const cancelMeetingBooking = async (id) => {
     if (!confirmCancel()) return;
 
-    const updated = meetingBookings.map((b) =>
-      b.id === id ? { ...b, status: "Cancelled" } : b
-    );
+    const booking = meetingBookings.find((b) => b.id === id);
+    const bookingIdString = booking?.bookingIdString; // ✅ Use bookingIdString
 
-    setMeetingBookings(updated);
-    localStorage.setItem("meetingBookings", JSON.stringify(updated));
+    if (!bookingIdString) {
+      alert("Booking ID is missing! Cannot cancel this booking.");
+      return;
+    }
 
-    // ⭐ Meeting cancellation notification
-    const booking = meetingBookings.find((m) => m.id === id);
+    try {
+      await bookNowAPI.cancelBooking(bookingIdString);
 
-    addNotification({
-      id: Date.now(),
-      title: "Meeting Cancelled",
-      message: `Your meeting room ${booking.room} for ${booking.date} has been cancelled.`,
-      time: "Just now",
-      unread: true,
-      iconType: "meeting",
-      tag: "New",
-      bg: "bg-red-50",
-    });
+      const updated = meetingBookings.map((b) =>
+        b.id === id ? { ...b, status: "Cancelled" } : b
+      );
+
+      setMeetingBookings(updated);
+      localStorage.setItem("meetingBookings", JSON.stringify(updated));
+
+      addNotification({
+        id: Date.now(),
+        title: "Meeting Cancelled",
+        message: `Your meeting room ${booking.room} for ${booking.date} has been cancelled.`,
+        time: "Just now",
+        unread: true,
+        iconType: "meeting",
+        tag: "New",
+        bg: "bg-red-50",
+      });
+    } catch (error) {
+      console.error("Failed to cancel meeting booking:", error);
+      alert("Failed to cancel booking. Check console for details.");
+    }
   };
 
   // Sort Active → Completed → Cancelled
   const sortByStatus = (data) => {
     const statusOrder = { Active: 1, Completed: 2, Cancelled: 3 };
-
-    return [...data].sort((a, b) => {
-      return statusOrder[a.status] - statusOrder[b.status];
-    });
+    return [...data].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
   };
 
   const filterData = (data) => {
     let filtered = data;
-
-    if (statusFilter !== "All") {
-      filtered = data.filter((b) => b.status === statusFilter);
-    }
-
+    if (statusFilter !== "All") filtered = data.filter((b) => b.status === statusFilter);
     return sortByStatus(filtered);
   };
 
@@ -110,7 +122,6 @@ export default function BookingHistory() {
 
   return (
     <div className="min-h-screen bg-[#F6F7FB] px-10 py-10">
-
       <h1 className="text-2xl font-semibold">Booking History</h1>
       <p className="text-gray-600 mb-8">View and manage all your bookings</p>
 
@@ -120,14 +131,12 @@ export default function BookingHistory() {
           <Filter size={18} className="text-gray-600" />
           <span className="text-gray-700">Filter by status:</span>
         </div>
-
         <div className="flex gap-3">
           {["All", "Active", "Completed", "Cancelled"].map((btn) => (
             <button
               key={btn}
               onClick={() => setStatusFilter(btn)}
-              className={`px-5 py-1.5 rounded-lg border text-sm 
-              ${
+              className={`px-5 py-1.5 rounded-lg border text-sm ${
                 statusFilter === btn
                   ? "bg-blue-600 text-white border-blue-600"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -196,14 +205,11 @@ export default function BookingHistory() {
                 filteredSeats.map((b) => (
                   <tr key={b.id} className="border-b">
                     <td className="py-5 px-6 font-medium">Seat {b.seatId}</td>
-
                     <td className="py-5 px-6 flex items-center gap-2">
                       <MapPin size={16} className="text-purple-600" />
                       {b.office}
                     </td>
-
                     <td className="py-5 px-6">{b.date}</td>
-
                     <td className="py-5 px-6">
                       <span
                         className={`px-3 py-1 text-sm rounded-full ${
@@ -217,7 +223,6 @@ export default function BookingHistory() {
                         {b.status}
                       </span>
                     </td>
-
                     <td className="py-5 px-6 text-right">
                       {b.status === "Active" ? (
                         <button
@@ -252,7 +257,6 @@ export default function BookingHistory() {
                 <th className="py-3 px-6 text-right">Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {filteredMeetings.length === 0 ? (
                 <tr>
@@ -267,16 +271,12 @@ export default function BookingHistory() {
                       <DoorOpen size={18} className="text-purple-600" />
                       {b.room}
                     </td>
-
                     <td className="py-5 px-6">{b.date}</td>
-
                     <td className="py-5 px-6 flex items-center gap-2">
                       <Clock size={16} />
                       {b.start} - {b.end}
                     </td>
-
                     <td className="py-5 px-6">{b.attendees} people</td>
-
                     <td className="py-5 px-6">
                       <span
                         className={`px-3 py-1 text-sm rounded-full ${
@@ -290,7 +290,6 @@ export default function BookingHistory() {
                         {b.status}
                       </span>
                     </td>
-
                     <td className="py-5 px-6 text-right">
                       {b.status === "Active" ? (
                         <button
